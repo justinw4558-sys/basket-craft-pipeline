@@ -1,0 +1,9 @@
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: pipeline
+      POSTGRES_PASSWORD: pipeline
+      POSTGRES_DB: basket_craft
+    ports:
+      - "5432:5432"
