@@ -109,8 +109,8 @@ SELECT
     COUNT(DISTINCT order_id)         AS order_count,
     ROUND(SUM(price_usd) / NULLIF(COUNT(DISTINCT order_id), 0), 2) AS avg_order_value
 FROM stg_order_items
-GROUP BY month, product_name
-ORDER BY month, product_name;
+GROUP BY TO_CHAR(created_at, 'YYYY-MM'), product_name
+ORDER BY TO_CHAR(created_at, 'YYYY-MM'), product_name;
 ```
 
 ### Refresh strategy
