@@ -129,6 +129,11 @@ def test_transform_creates_mart_with_correct_aggregations():
 
     conn = get_test_pg_conn()
 
+    # Drop table if it exists from a prior test run
+    with conn.cursor() as cur:
+        cur.execute("DROP TABLE IF EXISTS mart_monthly_sales")
+    conn.commit()
+
     # Seed staging with known data:
     # Jan 2024: 2 order_items from 2 separate orders, $50 + $50 = $100 revenue, 2 orders, AOV $50
     # Feb 2024: 1 order_item, $60, 1 order, AOV $60
@@ -194,6 +199,11 @@ def test_transform_truncates_before_rebuild():
     from pipeline import load_staging, transform
 
     conn = get_test_pg_conn()
+
+    # Drop table if it exists from a prior test run
+    with conn.cursor() as cur:
+        cur.execute("DROP TABLE IF EXISTS mart_monthly_sales")
+    conn.commit()
 
     seed_df = pd.DataFrame([
         {

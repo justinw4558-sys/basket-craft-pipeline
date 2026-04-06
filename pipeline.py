@@ -68,7 +68,6 @@ def transform(pg_conn) -> None:
                 ROUND(SUM(price_usd) / NULLIF(COUNT(DISTINCT order_id), 0), 2)  AS avg_order_value
             FROM stg_order_items
             GROUP BY TO_CHAR(created_at, 'YYYY-MM'), product_name
-            ORDER BY TO_CHAR(created_at, 'YYYY-MM'), product_name
         """)
         cur.execute("SELECT COUNT(*) FROM mart_monthly_sales")
         count = cur.fetchone()[0]
