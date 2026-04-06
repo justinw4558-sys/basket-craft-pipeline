@@ -110,7 +110,6 @@ git commit -m "feat: add project scaffolding and Docker PostgreSQL"
 ```python
 import pandas as pd
 from unittest.mock import MagicMock, patch
-import pytest
 
 
 def test_extract_returns_dataframe_with_expected_columns():
@@ -123,7 +122,7 @@ def test_extract_returns_dataframe_with_expected_columns():
     ]
     fake_df = pd.DataFrame(columns=expected_columns)
 
-    with patch("pandas.read_sql", return_value=fake_df) as mock_read_sql:
+    with patch("pipeline.pd.read_sql", return_value=fake_df) as mock_read_sql:
         from pipeline import extract
         result = extract(mock_conn)
 
@@ -136,7 +135,7 @@ def test_extract_query_joins_order_items_and_products():
     mock_conn = MagicMock()
     fake_df = pd.DataFrame()
 
-    with patch("pandas.read_sql", return_value=fake_df) as mock_read_sql:
+    with patch("pipeline.pd.read_sql", return_value=fake_df) as mock_read_sql:
         from pipeline import extract
         extract(mock_conn)
 
