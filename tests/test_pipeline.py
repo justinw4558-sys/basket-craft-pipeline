@@ -1,4 +1,5 @@
 import pandas as pd
+import psycopg2
 from unittest.mock import MagicMock, patch
 
 
@@ -33,9 +34,6 @@ def test_extract_query_joins_order_items_and_products():
     assert "order_items" in sql_called
     assert "products" in sql_called
     assert "JOIN" in sql_called.upper()
-
-
-import psycopg2
 
 
 def get_test_pg_conn():
@@ -96,6 +94,11 @@ def test_load_staging_truncates_before_insert():
     from pipeline import load_staging
 
     conn = get_test_pg_conn()
+
+    # Drop table if it exists from a prior test run
+    with conn.cursor() as cur:
+        cur.execute("DROP TABLE IF EXISTS stg_order_items")
+    conn.commit()
 
     sample_df = pd.DataFrame([
         {
