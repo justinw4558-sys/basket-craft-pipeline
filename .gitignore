@@ -208,3 +208,7 @@ __marimo__/
 
 # Superpowers brainstorm sessions
 .superpowers/
+
+# AWS credentials
+*.csv
+basket-craft-secret-access-key.csv
