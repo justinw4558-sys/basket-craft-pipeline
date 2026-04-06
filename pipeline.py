@@ -73,3 +73,37 @@ def transform(pg_conn) -> None:
         count = cur.fetchone()[0]
     pg_conn.commit()
     print(f"[transform] Built mart_monthly_sales ({count} rows)")
+
+
+def get_mysql_conn():
+    return pymysql.connect(
+        host=os.getenv("MYSQL_HOST"),
+        port=int(os.getenv("MYSQL_PORT", 3306)),
+        user=os.getenv("MYSQL_USER"),
+        password=os.getenv("MYSQL_PASSWORD"),
+        database=os.getenv("MYSQL_DATABASE"),
+    )
+
+
+def get_pg_conn():
+    return psycopg2.connect(
+        host=os.getenv("POSTGRES_HOST"),
+        port=int(os.getenv("POSTGRES_PORT", 5432)),
+        user=os.getenv("POSTGRES_USER"),
+        password=os.getenv("POSTGRES_PASSWORD"),
+        dbname=os.getenv("POSTGRES_DATABASE"),
+    )
+
+
+if __name__ == "__main__":
+    mysql_conn = get_mysql_conn()
+    pg_conn = get_pg_conn()
+    try:
+        df = extract(mysql_conn)
+        print(f"[extract] Fetched {len(df)} rows from MySQL")
+        load_staging(df, pg_conn)
+        transform(pg_conn)
+        print("Done.")
+    finally:
+        mysql_conn.close()
+        pg_conn.close()
