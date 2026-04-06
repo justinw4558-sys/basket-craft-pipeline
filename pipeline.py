@@ -77,33 +77,35 @@ def transform(pg_conn) -> None:
 
 def get_mysql_conn():
     return pymysql.connect(
-        host=os.getenv("MYSQL_HOST"),
+        host=os.environ["MYSQL_HOST"],
         port=int(os.getenv("MYSQL_PORT", 3306)),
-        user=os.getenv("MYSQL_USER"),
-        password=os.getenv("MYSQL_PASSWORD"),
-        database=os.getenv("MYSQL_DATABASE"),
+        user=os.environ["MYSQL_USER"],
+        password=os.environ["MYSQL_PASSWORD"],
+        database=os.environ["MYSQL_DATABASE"],
     )
 
 
 def get_pg_conn():
     return psycopg2.connect(
-        host=os.getenv("POSTGRES_HOST"),
+        host=os.environ["POSTGRES_HOST"],
         port=int(os.getenv("POSTGRES_PORT", 5432)),
-        user=os.getenv("POSTGRES_USER"),
-        password=os.getenv("POSTGRES_PASSWORD"),
-        dbname=os.getenv("POSTGRES_DATABASE"),
+        user=os.environ["POSTGRES_USER"],
+        password=os.environ["POSTGRES_PASSWORD"],
+        dbname=os.environ["POSTGRES_DATABASE"],
     )
 
 
 if __name__ == "__main__":
     mysql_conn = get_mysql_conn()
-    pg_conn = get_pg_conn()
     try:
-        df = extract(mysql_conn)
-        print(f"[extract] Fetched {len(df)} rows from MySQL")
-        load_staging(df, pg_conn)
-        transform(pg_conn)
-        print("Done.")
+        pg_conn = get_pg_conn()
+        try:
+            df = extract(mysql_conn)
+            print(f"[extract] Fetched {len(df)} rows from MySQL")
+            load_staging(df, pg_conn)
+            transform(pg_conn)
+            print("Done.")
+        finally:
+            pg_conn.close()
     finally:
         mysql_conn.close()
-        pg_conn.close()
