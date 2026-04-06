@@ -42,3 +42,35 @@ def load_staging(df: pd.DataFrame, pg_conn) -> None:
         )
     pg_conn.commit()
     print(f"[load]    Loaded {len(df)} rows into stg_order_items")
+
+
+def transform(pg_conn) -> None:
+    with pg_conn.cursor() as cur:
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS mart_monthly_sales (
+                month           CHAR(7),
+                product_name    VARCHAR(50),
+                total_revenue   NUMERIC(10,2),
+                order_count     INTEGER,
+                avg_order_value NUMERIC(10,2),
+                PRIMARY KEY (month, product_name)
+            )
+        """)
+        cur.execute("TRUNCATE TABLE mart_monthly_sales")
+        cur.execute("""
+            INSERT INTO mart_monthly_sales
+                (month, product_name, total_revenue, order_count, avg_order_value)
+            SELECT
+                TO_CHAR(created_at, 'YYYY-MM')                                   AS month,
+                product_name,
+                SUM(price_usd)                                                   AS total_revenue,
+                COUNT(DISTINCT order_id)                                         AS order_count,
+                ROUND(SUM(price_usd) / NULLIF(COUNT(DISTINCT order_id), 0), 2)  AS avg_order_value
+            FROM stg_order_items
+            GROUP BY TO_CHAR(created_at, 'YYYY-MM'), product_name
+            ORDER BY TO_CHAR(created_at, 'YYYY-MM'), product_name
+        """)
+        cur.execute("SELECT COUNT(*) FROM mart_monthly_sales")
+        count = cur.fetchone()[0]
+    pg_conn.commit()
+    print(f"[transform] Built mart_monthly_sales ({count} rows)")

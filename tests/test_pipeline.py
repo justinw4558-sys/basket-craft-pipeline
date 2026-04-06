@@ -120,3 +120,98 @@ def test_load_staging_truncates_before_insert():
 
     conn.close()
     assert count == 1
+
+
+def test_transform_creates_mart_with_correct_aggregations():
+    """transform() must produce correct revenue, order_count, and avg_order_value."""
+    import datetime
+    from pipeline import load_staging, transform
+
+    conn = get_test_pg_conn()
+
+    # Seed staging with known data:
+    # Jan 2024: 2 order_items from 2 separate orders, $50 + $50 = $100 revenue, 2 orders, AOV $50
+    # Feb 2024: 1 order_item, $60, 1 order, AOV $60
+    seed_df = pd.DataFrame([
+        {
+            "order_item_id": 1,
+            "order_id": 1,
+            "product_id": 1,
+            "product_name": "The Original Gift Basket",
+            "created_at": datetime.datetime(2024, 1, 5),
+            "price_usd": 50.00,
+        },
+        {
+            "order_item_id": 2,
+            "order_id": 2,
+            "product_id": 1,
+            "product_name": "The Original Gift Basket",
+            "created_at": datetime.datetime(2024, 1, 20),
+            "price_usd": 50.00,
+        },
+        {
+            "order_item_id": 3,
+            "order_id": 3,
+            "product_id": 2,
+            "product_name": "The Valentine's Gift Basket",
+            "created_at": datetime.datetime(2024, 2, 10),
+            "price_usd": 60.00,
+        },
+    ])
+    load_staging(seed_df, conn)
+    transform(conn)
+
+    with conn.cursor() as cur:
+        cur.execute("""
+            SELECT month, product_name, total_revenue, order_count, avg_order_value
+            FROM mart_monthly_sales
+            ORDER BY month, product_name
+        """)
+        rows = cur.fetchall()
+
+    conn.close()
+
+    assert len(rows) == 2
+
+    jan_row = rows[0]
+    assert jan_row[0] == "2024-01"
+    assert jan_row[1] == "The Original Gift Basket"
+    assert float(jan_row[2]) == 100.00
+    assert jan_row[3] == 2
+    assert float(jan_row[4]) == 50.00
+
+    feb_row = rows[1]
+    assert feb_row[0] == "2024-02"
+    assert feb_row[1] == "The Valentine's Gift Basket"
+    assert float(feb_row[2]) == 60.00
+    assert feb_row[3] == 1
+    assert float(feb_row[4]) == 60.00
+
+
+def test_transform_truncates_before_rebuild():
+    """Calling transform() twice should not duplicate mart rows."""
+    import datetime
+    from pipeline import load_staging, transform
+
+    conn = get_test_pg_conn()
+
+    seed_df = pd.DataFrame([
+        {
+            "order_item_id": 1,
+            "order_id": 1,
+            "product_id": 1,
+            "product_name": "The Original Gift Basket",
+            "created_at": datetime.datetime(2024, 3, 1),
+            "price_usd": 49.99,
+        }
+    ])
+    load_staging(seed_df, conn)
+    transform(conn)
+    transform(conn)  # second call should truncate first
+
+    with conn.cursor() as cur:
+        cur.execute("SELECT COUNT(*) FROM mart_monthly_sales")
+        count = cur.fetchone()[0]
+
+    conn.close()
+    assert count == 1
