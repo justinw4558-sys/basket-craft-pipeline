@@ -51,6 +51,7 @@ def load_table(table, rds_engine, sf_conn):
         table_name=table,
         auto_create_table=True,
         overwrite=True,
+        quote_identifiers=False,
     )
     if not success:
         raise RuntimeError(f"[{table}] write_pandas reported failure")
