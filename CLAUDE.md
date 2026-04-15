@@ -47,6 +47,7 @@ Three independent scripts:
 - Reads all 8 raw tables from AWS RDS PostgreSQL using SQLAlchemy + `pd.read_sql_table`
 - Writes each table to Snowflake using `write_pandas` with `overwrite=True` (truncate-and-reload)
 - All column names are lowercased before writing (required for dbt compatibility)
+- Uses `quote_identifiers=False` so Snowflake stores table/column names as unquoted uppercase — required for unquoted SQL queries and dbt `ref()` to resolve correctly
 - Uses `SNOWFLAKE_*` env vars for credentials and `RDS_*` env vars for the source
 
 ## Destination Tables
